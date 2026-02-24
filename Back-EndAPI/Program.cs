@@ -22,7 +22,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     ));
 
 // REGISTER YOUR HERO SERVICE
-builder.Services.AddScoped(typeof(CrudService<>));
 builder.Services.AddScoped<CharacterService>();
 
 

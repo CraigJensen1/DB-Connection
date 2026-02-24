@@ -1,27 +1,22 @@
 ﻿using Back_EndAPI.Entities;
 using ClassLibrary.DTOs;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
 
-public class CharacterService : CrudService<Character>
+public class CharacterService
 {
-    public CharacterService(AppDbContext context) : base(context)
+    private readonly AppDbContext _context;
+
+    public CharacterService(AppDbContext context)
     {
+        _context = context;
     }
 
-    public async Task LevelUpAsync(Guid id)
-    {
-        var character = await GetByIdAsync(id);
-        if (character == null)
-            throw new Exception("Character not found");
-
-        character.Level++;
-        character.Health += 10;
-        character.Mana += 5;
-
-        await SaveAsync();
-    }
-
-    public async Task<List<CharacterDTO>> GetAllDtosAsync()
+    // ============================================================
+    // GET ALL
+    // ============================================================
+    public async Task<List<CharacterDTO>> GetAllAsync()
     {
         return await _context.Characters
             .Select(c => new CharacterDTO
@@ -35,86 +30,149 @@ public class CharacterService : CrudService<Character>
             })
             .ToListAsync();
     }
+
+    // ============================================================
+    // GET ONE
+    // ============================================================
+    public async Task<CharacterDTO?> GetByIdAsync(Guid id)
+    {
+        return await _context.Characters
+            .Where(c => c.HeroId == id)
+            .Select(c => new CharacterDTO
+            {
+                Id = c.HeroId,
+                Name = c.Name,
+                Class = c.Class,
+                Level = c.Level,
+                Health = c.Health,
+                Mana = c.Mana
+            })
+            .FirstOrDefaultAsync();
+    }
+
+    // ============================================================
+    // CREATE
+    // ============================================================
+    public async Task<CharacterDTO> CreateAsync(CharacterDTO dto)
+    {
+        // ---------------------------
+        // Normalize
+        // ---------------------------
+        dto.Name = dto.Name.Trim();
+        dto.Class = dto.Class.Trim();
+
+        // ---------------------------
+        // Extra structural rules
+        // ---------------------------
+
+        if (!Regex.IsMatch(dto.Name, @"^[a-zA-Z0-9]+$"))
+            throw new ValidationException("Name must be alphanumeric.");
+
+        var validClasses = new[] { "Warrior", "Mage", "Rogue", "Archer" };
+
+        if (!validClasses.Any(c =>
+            c.Equals(dto.Class, StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new ValidationException("Invalid character class.");
+        }
+
+        dto.Class = validClasses
+            .First(c => c.Equals(dto.Class,
+                StringComparison.OrdinalIgnoreCase));
+
+        // ---------------------------
+        // Business rule
+        // ---------------------------
+
+        var exists = await _context.Characters
+            .AnyAsync(c => c.Name.ToLower() == dto.Name.ToLower());
+
+        if (exists)
+            throw new ValidationException("Character name already exists.");
+
+        if (dto.Class == "Rogue" && dto.Level > 40)
+            throw new ValidationException("Rogues cannot exceed level 40.");
+
+        // ---------------------------
+        // Persist
+        // ---------------------------
+
+        var entity = new Character
+        {
+            HeroId = Guid.NewGuid(),
+            Name = dto.Name,
+            Class = dto.Class,
+            Level = dto.Level,
+            Health = dto.Health,
+            Mana = dto.Mana,
+            CreatedAt = DateTime.UtcNow,
+        };
+
+        _context.Characters.Add(entity);
+        await _context.SaveChangesAsync();
+
+        dto.Id = entity.HeroId;
+
+        return dto;
+    }
+
+    // ============================================================
+    // UPDATE
+    // ============================================================
+    public async Task<bool> UpdateAsync(CharacterDTO dto)
+    {
+        var entity = await _context.Characters
+            .FirstOrDefaultAsync(c => c.HeroId == dto.Id);
+
+        if (entity == null)
+            return false;
+
+        dto.Name = dto.Name.Trim();
+        dto.Class = dto.Class.Trim();
+
+        if (!Regex.IsMatch(dto.Name, @"^[a-zA-Z0-9]+$"))
+            throw new ValidationException("Name must be alphanumeric.");
+
+        var validClasses = new[] { "Warrior", "Mage", "Rogue", "Archer" };
+
+        if (!validClasses.Any(c =>
+            c.Equals(dto.Class, StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new ValidationException("Invalid character class.");
+        }
+
+        dto.Class = validClasses
+            .First(c => c.Equals(dto.Class,
+                StringComparison.OrdinalIgnoreCase));
+
+        if (dto.Class == "Rogue" && dto.Level > 40)
+            throw new ValidationException("Rogues cannot exceed level 40.");
+
+        entity.Name = dto.Name;
+        entity.Class = dto.Class;
+        entity.Level = dto.Level;
+        entity.Health = dto.Health;
+        entity.Mana = dto.Mana;
+
+        await _context.SaveChangesAsync();
+
+        return true;
+    }
+
+    // ============================================================
+    // DELETE
+    // ============================================================
+    public async Task<bool> DeleteAsync(Guid id)
+    {
+        var entity = await _context.Characters
+            .FirstOrDefaultAsync(c => c.HeroId == id);
+
+        if (entity == null)
+            return false;
+
+        _context.Characters.Remove(entity);
+        await _context.SaveChangesAsync();
+
+        return true;
+    }
 }
-
-
-//using ClassLibrary.DTOs;
-//using Microsoft.EntityFrameworkCore;
-
-////
-//// SERVICE ROLE
-//// -------------
-//// Services contain BUSINESS LOGIC and DATA ACCESS.
-//// Controllers should never talk directly to the database.
-////
-//// Services:
-//// - Decide WHAT data to fetch
-//// - Decide HOW data is shaped
-//// - Return DTOs (safe for UI)
-////
-//// This keeps controllers simple and testable.
-////
-
-//public class CharacterService
-//{
-//    // Database context injected via Dependency Injection
-//    private readonly AppDbContext _db;
-
-//    public CharacterService(AppDbContext db)
-//    {
-//        _db = db;
-//    }
-
-//    // Returns characters as DTOs (not entities)
-//    public async Task<List<CharacterDTO>> GetCharactersAsync()
-//    {
-//        // Query the database and PROJECT directly into DTOs
-//        // EF Core generates optimized SQL that selects only needed columns
-//        return await _db.Characters
-//            .Select(e => new CharacterDTO
-//            {
-//                Id = e.Id,
-//                Name = e.Name,
-//                Class = e.Class,
-//                Level = e.Level,
-//                Health = e.Health,
-//                Mana = e.Mana
-//            })
-//            .ToListAsync();
-//    }
-
-//    // Example: SAME DATA, but using raw SQL instead of EF LINQ
-//    // This is for learning / reference purposes
-//    public async Task<List<CharacterDTO>> GetCharactersWithSqlAsync()
-//    {
-//        var results = new List<CharacterDTO>();
-
-//        // Get the raw database connection EF is using
-//        using var conn = _db.Database.GetDbConnection();
-//        await conn.OpenAsync();
-
-//        // Create a SQL command
-//        using var cmd = conn.CreateCommand();
-//        cmd.CommandText = """
-//            SELECT hero_id, name, class, level, health, mana
-//            FROM character
-//        """;
-
-//        // Execute query and read results
-//        using var reader = await cmd.ExecuteReaderAsync();
-//        while (await reader.ReadAsync())
-//        {
-//            results.Add(new CharacterDTO
-//            {
-//                Id = reader.GetGuid(0),
-//                Name = reader.GetString(1),
-//                Class = reader.GetString(2),
-//                Level = reader.GetInt32(3),
-//                Health = reader.GetInt32(4),
-//                Mana = reader.GetInt32(5)
-//            });
-//        }
-
-//        return results;
-//    }
-//}

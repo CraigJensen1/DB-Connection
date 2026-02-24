@@ -1,106 +1,122 @@
-﻿using Back_EndAPI.Entities;
-using ClassLibrary.DTOs;
+﻿using ClassLibrary.DTOs;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 
+[ApiController]
 [Route("api/[controller]")]
-public class CharactersController
-    : CrudController<Character, CharacterDTO>
+public class CharactersController : ControllerBase
 {
-    private readonly CharacterService _characterService;
+    private readonly CharacterService _service;
 
     public CharactersController(CharacterService service)
-        : base(service)
     {
-        _characterService = service;
+        _service = service;
     }
 
-    protected override CharacterDTO MapToDto(Character entity)
-        => new CharacterDTO
-        {
-            Id = entity.HeroId,
-            Name = entity.Name,
-            Class = entity.Class,
-            Level = entity.Level,
-            Health = entity.Health,
-            Mana = entity.Mana
-        };
-
-    protected override Character MapToEntity(CharacterDTO dto)
-        => new Character
-        {
-            HeroId = dto.Id == Guid.Empty ? Guid.NewGuid() : dto.Id,
-            Name = dto.Name,
-            Class = dto.Class,
-            Level = dto.Level,
-            Health = dto.Health,
-            Mana = dto.Mana,
-            CreatedAt = DateTime.UtcNow
-        };
-
-    [HttpPost("{id}/levelup")]
-    public async Task<IActionResult> LevelUp(Guid id)
+    // ============================================================
+    // GET ALL
+    // ============================================================
+    [HttpGet]
+    public async Task<ActionResult<List<CharacterDTO>>> GetAll()
     {
-        //
-        await _characterService.LevelUpAsync(id);
+        return Ok(await _service.GetAllAsync());
+    }
+
+    // ============================================================
+    // GET BY ID
+    // ============================================================
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(Guid id)
+    {
+        if (id == Guid.Empty)
+            return BadRequest(Error("Invalid Id."));
+
+        var character = await _service.GetByIdAsync(id);
+
+        if (character == null)
+            return NotFound(Error("Character not found."));
+
+        return Ok(character);
+    }
+
+    // ============================================================
+    // CREATE
+    // ============================================================
+    [HttpPost]
+    public async Task<IActionResult> Create(CharacterDTO dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        // Client cannot set Id during creation
+        if (dto.Id != Guid.Empty)
+            return BadRequest(Error("Id cannot be set during creation."));
+
+        try
+        {
+            var created = await _service.CreateAsync(dto);
+
+            return CreatedAtAction(
+                nameof(GetById),
+                new { id = created.Id },
+                created);
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(Error(ex.Message));
+        }
+    }
+
+    // ============================================================
+    // UPDATE
+    // ============================================================
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(Guid id, CharacterDTO dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        if (id == Guid.Empty)
+            return BadRequest(Error("Invalid Id."));
+
+        if (dto.Id != id)
+            return BadRequest(Error("Route Id must match body Id."));
+
+        try
+        {
+            var updated = await _service.UpdateAsync(dto);
+
+            if (!updated)
+                return NotFound(Error("Character not found."));
+
+            return NoContent();
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(Error(ex.Message));
+        }
+    }
+
+    // ============================================================
+    // DELETE
+    // ============================================================
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        if (id == Guid.Empty)
+            return BadRequest(Error("Invalid Id."));
+
+        var deleted = await _service.DeleteAsync(id);
+
+        if (!deleted)
+            return NotFound(Error("Character not found."));
+
         return NoContent();
     }
 
-
-    [HttpGet]
-    public override async Task<ActionResult<List<CharacterDTO>>> Get()
+    private object Error(string message) => new
     {
-        // This overrides the base Get() method to return DTOs more efficiently.
-        var dtos = await _characterService.GetAllDtosAsync();
-        return Ok(dtos);
-    }
+        error = message,
+        timestamp = DateTime.UtcNow
+    };
 }
-
-
-
-
-
-
-
-
-//using ClassLibrary.DTOs;
-//using Microsoft.AspNetCore.Mvc;
-
-////
-//// CONTROLLER ROLE
-//// ----------------
-//// Controllers are the "front door" of your backend.
-//// They receive HTTP requests, call services to do the work,
-//// and translate results into HTTP responses.
-////
-//// Controllers should be THIN:
-//// - No database logic
-//// - No business rules
-//// - No data transformation logic
-////
-
-//[ApiController] // Enables automatic model validation & API behavior
-//[Route("api/characters")] // Base route for this controller
-//public class CharacterController : ControllerBase
-//{
-//    // Service that contains the business/data logic
-//    private readonly CharacterService _characterService;
-
-//    // Constructor Injection:
-//    // ASP.NET gives us CharacterService automatically via Dependency Injection
-//    public CharacterController(CharacterService characterService)
-//    {
-//        _characterService = characterService;
-//    }
-
-//    // GET: api/characters
-//    // Returns a list of characters to the client
-//    [HttpGet]
-//    public async Task<ActionResult<List<CharacterDTO>>> GetCharacters()
-//    {
-//        // Ask the service for character data
-//        var characters = await _characterService.GetCharactersAsync();
-
-//        // Return HTTP 200 OK with JSON data
-//        return Ok(characters);
-//    }
-//}
