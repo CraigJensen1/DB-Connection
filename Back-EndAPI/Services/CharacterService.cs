@@ -1,4 +1,5 @@
-﻿using Back_EndAPI.Entities;
+﻿using Back_EndAPI.Data;
+using Back_EndAPI.Entities;
 using ClassLibrary.DTOs;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
@@ -13,9 +14,6 @@ public class CharacterService
         _context = context;
     }
 
-    // ============================================================
-    // GET ALL
-    // ============================================================
     public async Task<List<CharacterDTO>> GetAllAsync()
     {
         return await _context.Characters
@@ -31,9 +29,6 @@ public class CharacterService
             .ToListAsync();
     }
 
-    // ============================================================
-    // GET ONE
-    // ============================================================
     public async Task<CharacterDTO?> GetByIdAsync(Guid id)
     {
         return await _context.Characters
@@ -50,9 +45,6 @@ public class CharacterService
             .FirstOrDefaultAsync();
     }
 
-    // ============================================================
-    // CREATE
-    // ============================================================
     public async Task<CharacterDTO> CreateAsync(CharacterDTO dto)
     {
         // ---------------------------
@@ -105,7 +97,7 @@ public class CharacterService
             Level = dto.Level,
             Health = dto.Health,
             Mana = dto.Mana,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified),
         };
 
         _context.Characters.Add(entity);
@@ -116,9 +108,6 @@ public class CharacterService
         return dto;
     }
 
-    // ============================================================
-    // UPDATE
-    // ============================================================
     public async Task<bool> UpdateAsync(CharacterDTO dto)
     {
         var entity = await _context.Characters
@@ -145,6 +134,13 @@ public class CharacterService
             .First(c => c.Equals(dto.Class,
                 StringComparison.OrdinalIgnoreCase));
 
+        var duplicateExists = await _context.Characters
+            .AnyAsync(c => c.Name.ToLower() == dto.Name.ToLower()
+                        && c.HeroId != dto.Id);
+
+        if (duplicateExists)
+            throw new ValidationException("Character name already exists.");
+
         if (dto.Class == "Rogue" && dto.Level > 40)
             throw new ValidationException("Rogues cannot exceed level 40.");
 
@@ -159,9 +155,6 @@ public class CharacterService
         return true;
     }
 
-    // ============================================================
-    // DELETE
-    // ============================================================
     public async Task<bool> DeleteAsync(Guid id)
     {
         var entity = await _context.Characters

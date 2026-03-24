@@ -1,4 +1,5 @@
 ﻿using ClassLibrary.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 
@@ -47,7 +48,7 @@ public class CharactersController : ControllerBase
 
         if (character == null)
             return NotFound(Error("Character not found."));
-
+        //
         return Ok(character);
     }
 
@@ -55,6 +56,9 @@ public class CharactersController : ControllerBase
     // CREATE
     // ============================================================
     [HttpPost]
+    //[Authorize(Roles = "CoolGuy, Admin")]//has Create role
+    //[Authorize(Policy = "Create")]//permission instead of role
+    [Authorize(Policy = "character.create")]
     public async Task<IActionResult> Create(CharacterDTO dto)
     {
         if (!ModelState.IsValid)
