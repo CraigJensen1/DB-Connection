@@ -45,7 +45,8 @@ public class CharactersController : ControllerBase
     // ============================================================
     [HttpPost]
     //[Authorize(Roles = "CoolGuy, Admin")]//has Create role
-    [Authorize(Policy = "Create")]//permission instead of role
+    //[Authorize(Policy = "Create")]//permission instead of role
+    [Authorize(Policy = "character.create")]
     public async Task<IActionResult> Create(CharacterDTO dto)
     {
         if (!ModelState.IsValid)

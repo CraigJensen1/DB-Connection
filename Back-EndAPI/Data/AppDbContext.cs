@@ -52,6 +52,8 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<Car> Cars { get; set; }
 
+    public virtual DbSet<Character> Characters { get; set; }
+
     public virtual DbSet<Categorizedaudience> Categorizedaudiences { get; set; }
 
     public virtual DbSet<Categorizedjoke> Categorizedjokes { get; set; }

@@ -1,4 +1,8 @@
+using Back_EndAPI.Data;
+using Back_EndAPI.Services;
+using ClassLibrary.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -24,15 +28,21 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("Create", policy =>
-        policy.RequireClaim("permission", "users.create"));
-});
+
+// ============================================================
+// CHANGED FROM THIS:
+// ============================================================
+//builder.Services.AddAuthorization(options =>
+//{
+//    options.AddPolicy("Create", policy =>
+//        policy.RequireClaim("permission", "users.create"));
+//});
+
+// TO THIS:
+builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
 
 
 
-// Add services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -50,12 +60,6 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-
-
-
-
-
-
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -71,11 +75,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     ));
 
 // REGISTER YOUR HERO SERVICE
+builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<CharacterService>();
-
-
-
-
 
 var app = builder.Build();
 
