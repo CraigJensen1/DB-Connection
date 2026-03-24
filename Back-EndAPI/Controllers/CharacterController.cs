@@ -19,7 +19,19 @@ public class CharactersController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<CharacterDTO>>> GetAll()
     {
-        return Ok(await _service.GetAllAsync());
+        try
+        {
+            var result = await _service.GetAllAsync();
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                message = "An error occurred while retrieving characters.",
+                detail = ex.Message
+            });
+        }
     }
 
     // ============================================================
