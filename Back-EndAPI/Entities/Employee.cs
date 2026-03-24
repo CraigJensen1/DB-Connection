@@ -6,47 +6,31 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Back_EndAPI.Entities;
 
-[Table("employee")]
-[Index("Email", Name = "employee_email_key", IsUnique = true)]
+[Table("employee", Schema = "rolebasedsecurity")]
+[Index("Ssn", Name = "employee_ssn_key", IsUnique = true)]
 public partial class Employee
 {
     [Key]
-    [Column("employee_id")]
-    public Guid EmployeeId { get; set; }
+    [Column("id")]
+    public int Id { get; set; }
 
-    [Column("first_name")]
+    [Column("name")]
     [StringLength(100)]
-    public string FirstName { get; set; } = null!;
+    public string Name { get; set; } = null!;
 
-    [Column("last_name")]
-    [StringLength(100)]
-    public string LastName { get; set; } = null!;
+    [Column("birthdate")]
+    public DateOnly Birthdate { get; set; }
 
-    [Column("email")]
-    [StringLength(255)]
-    public string Email { get; set; } = null!;
+    [Column("ssn")]
+    [StringLength(11)]
+    public string Ssn { get; set; } = null!;
 
-    [Column("phone")]
-    [StringLength(25)]
-    public string Phone { get; set; } = null!;
+    [Column("hiredate")]
+    public DateOnly Hiredate { get; set; }
 
-    [Column("job_title")]
-    [StringLength(150)]
-    public string JobTitle { get; set; } = null!;
+    [Column("terminationdate")]
+    public DateOnly? Terminationdate { get; set; }
 
-    [Column("salary")]
-    [Precision(12, 2)]
-    public decimal Salary { get; set; }
-
-    [Column("hire_date")]
-    public DateOnly HireDate { get; set; }
-
-    [Column("is_active")]
-    public bool IsActive { get; set; }
-
-    [Column("created_at", TypeName = "timestamp without time zone")]
-    public DateTime CreatedAt { get; set; }
-
-    [Column("updated_at", TypeName = "timestamp without time zone")]
-    public DateTime UpdatedAt { get; set; }
+    [InverseProperty("Employee")]
+    public virtual ICollection<EmployeeRole> EmployeeRoles { get; set; } = new List<EmployeeRole>();
 }

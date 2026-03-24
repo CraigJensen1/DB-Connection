@@ -1,7 +1,4 @@
-﻿using Back_EndAPI.Entities;
-using Microsoft.EntityFrameworkCore;
-
-//
+﻿//
 // DB CONTEXT ROLE
 // ----------------
 // AppDbContext represents the DATABASE.
@@ -15,16 +12,16 @@ using Microsoft.EntityFrameworkCore;
 // This class should contain NO business logic.
 //
 
-public class AppDbContext : DbContext
-{
-    // DbSet = a database table
-    // This tells EF Core there is a "character" table
-    public DbSet<Character> Characters => Set<Character>();
+//public class AppDbContext : DbContext
+//{
+//    // DbSet = a database table
+//    // This tells EF Core there is a "character" table
+//    public DbSet<Character> Characters => Set<Character>();
 
-    // Constructor receives configuration options
-    // (connection string, provider, logging, etc.)
-    public AppDbContext(DbContextOptions<AppDbContext> options)
-        : base(options)
-    {
-    }
-}
+//    // Constructor receives configuration options
+//    // (connection string, provider, logging, etc.)
+//    public AppDbContext(DbContextOptions<AppDbContext> options)
+//        : base(options)
+//    {
+//    }
+//}
