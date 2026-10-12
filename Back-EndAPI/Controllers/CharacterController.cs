@@ -1,5 +1,4 @@
 ﻿using ClassLibrary.DTOs;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 
@@ -46,7 +45,8 @@ public class CharactersController : ControllerBase
     [HttpPost]
     //[Authorize(Roles = "CoolGuy, Admin")]//has Create role
     //[Authorize(Policy = "Create")]//permission instead of role
-    [Authorize(Policy = "character.create")]
+    //[Authorize(Policy = "character.create")]
+    //[Has(CharacterPermission.Create)]
     public async Task<IActionResult> Create(CharacterDTO dto)
     {
         if (!ModelState.IsValid)
@@ -123,4 +123,9 @@ public class CharactersController : ControllerBase
         error = message,
         timestamp = DateTime.UtcNow
     };
+}
+
+public enum CharacterPermission
+{
+    Create, Read, Update, Delete
 }

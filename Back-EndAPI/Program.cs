@@ -60,10 +60,19 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+//NON React
+//builder.Services.AddCors(options =>
+//{
+//    options.AddDefaultPolicy(policy =>
+//        policy.AllowAnyOrigin()
+//              .AllowAnyHeader()
+//              .AllowAnyMethod());
+//});
+//WITH React
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy =>
-        policy.AllowAnyOrigin()
+    options.AddPolicy("ReactApp", policy =>
+        policy.WithOrigins("http://localhost:5173")
               .AllowAnyHeader()
               .AllowAnyMethod());
 });
@@ -90,7 +99,10 @@ using (var scope = app.Services.CreateScope())
     Console.WriteLine("Connected to Postgres!");
 }
 
-app.UseCors();
+//NON React
+//app.UseCors();
+//WITH React
+app.UseCors("ReactApp");
 
 // Pipeline
 if (app.Environment.IsDevelopment())
